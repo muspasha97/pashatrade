@@ -1,7 +1,6 @@
 ccxt>=4.4.0
 pandas>=2.2.0
 numpy>=1.26.0
-pandas-ta
 openpyxl>=3.1.2
 requests>=2.31.0
 scipy>=1.11.0
