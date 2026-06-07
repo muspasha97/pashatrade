@@ -32,6 +32,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Setup src package
+        run: |
+          mkdir -p src data state rules logs
+          for f in __init__.py collector.py config.py decision.py excel_io.py indicators.py main.py microstructure.py optimizer.py state.py trader.py utils.py; do
+            [ -f "$f" ] && cp "$f" src/
+          done
+
       - name: Run cycle
         run: python -m src.main
 
