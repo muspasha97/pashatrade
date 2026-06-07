@@ -1,0 +1,57 @@
+name: Trade System - 15dk Cycle
+
+on:
+  schedule:
+    # Her 15 dakikada bir (UTC)
+    - cron: "*/15 * * * *"
+  workflow_dispatch:  # Manuel tetikleme
+
+# Eski calismalar bitmeden yeni baslamasin
+concurrency:
+  group: trade-cycle
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # Excel ve state dosyalarini commit etmek icin
+
+jobs:
+  run-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run cycle
+        run: python -m src.main
+
+      - name: Commit and push state changes
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions Bot"
+          git add data/ state/ logs/ rules/ 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "Degisiklik yok, commit atlanidi"
+          else
+            git commit -m "auto: cycle $(date -u +%Y-%m-%dT%H:%MZ)"
+            # Rebase + push - cron'lar carpisirsa diye
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push origin main && break
+              echo "Push denemesi $i basarisiz, tekrar..."
+              sleep 5
+            done
+          fi
